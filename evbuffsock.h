@@ -13,16 +13,17 @@
 #include <netdb.h>
 #include <ev.h>
 
-#define BUFFERED_SOCKET_VERSION "0.1"
+#define EVBUFFSOCK_VERSION "0.1.1"
 
 struct Buffer {
     char *data;
     char *orig;
     size_t offset;
     size_t length;
+    size_t capacity;
 };
 
-struct Buffer *new_buffer(size_t length);
+struct Buffer *new_buffer(size_t length, size_t capacity);
 void free_buffer(struct Buffer *buf);
 void buffer_reset(struct Buffer *buf);
 int buffer_add(struct Buffer *buf, void *source, size_t length);
@@ -30,6 +31,7 @@ void buffer_drain(struct Buffer *buf, size_t length);
 int buffer_read_fd(struct Buffer *buf, int fd);
 int buffer_write_fd(struct Buffer *buf, int fd);
 int buffer_has_data(struct Buffer *buf);
+int buffer_expand(struct Buffer *buf, size_t need);
 
 enum BufferedSocketStates {
     BS_INIT,
