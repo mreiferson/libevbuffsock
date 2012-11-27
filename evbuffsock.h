@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <sys/ioctl.h>
 #include <ev.h>
 
 #define EVBUFFSOCK_VERSION "0.1.1"
@@ -32,6 +33,8 @@ int buffer_read_fd(struct Buffer *buf, int fd);
 int buffer_write_fd(struct Buffer *buf, int fd);
 int buffer_has_data(struct Buffer *buf);
 int buffer_expand(struct Buffer *buf, size_t need);
+int buffer_used(struct Buffer *buf);
+int buffer_available(struct Buffer *buf);
 
 enum BufferedSocketStates {
     BS_INIT,

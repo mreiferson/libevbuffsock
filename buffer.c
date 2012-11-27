@@ -1,5 +1,11 @@
 #include "evbuffsock.h"
 
+#ifdef DEBUG
+#define _DEBUG(...) fprintf(stdout, __VA_ARGS__)
+#else
+#define _DEBUG(...) do {;} while (0)
+#endif
+
 struct Buffer *new_buffer(size_t length, size_t capacity)
 {
     struct Buffer *buf;
@@ -34,10 +40,22 @@ int buffer_expand(struct Buffer *buf, size_t need)
     size_t expand = 0;
     size_t new_size = 0;
     
-    expand = buf->length * 2;
+    _DEBUG("%s: need %lu, pos %lu\n", __FUNCTION__, need, pos);
+    
+    if (need <= pos) {
+        _DEBUG("%s: re-aligning\n", __FUNCTION__);
+        // re-align
+        memmove(buf->orig, buf->data, buf->offset);
+        buf->data = buf->orig;
+        return 1;
+    }
+    
+    expand = buf->length;
     while (expand < need) {
         expand = expand * 2;
     }
+    
+    _DEBUG("%s: expanding by %lu\n", __FUNCTION__, expand);
     
     new_size = buf->length + expand;
     if (new_size > buf->capacity) {
@@ -46,6 +64,7 @@ int buffer_expand(struct Buffer *buf, size_t need)
     
     buf->orig = realloc(buf->orig, new_size);
     buf->data = buf->orig + pos;
+    buf->length = new_size;
     
     return 1;
 }
@@ -53,7 +72,9 @@ int buffer_expand(struct Buffer *buf, size_t need)
 int buffer_add(struct Buffer *buf, void *source, size_t length)
 {
     size_t used = buf->data - buf->orig + buf->offset;
-    size_t need = used + length - buf->length;
+    int32_t need = used + length - buf->length;
+    
+    _DEBUG("%s: adding %lu - used %lu, need %d\n", __FUNCTION__, length, used, need);
     
     if (need > 0) {
         if (!buffer_expand(buf, need)) {
@@ -81,10 +102,22 @@ void buffer_drain(struct Buffer *buf, size_t length)
 int buffer_read_fd(struct Buffer *buf, int fd)
 {
     int n;
-    n = recv(fd, buf->data, buf->length - buf->offset, 0);
+    int need;
+    
+    if (ioctl(fd, FIONREAD, &n) == -1 || n > 4096) {
+        n = 4096;
+    }
+    
+    need = n - buffer_available(buf);
+    if (need > 0 && !buffer_expand(buf, need)) {
+        return -1;
+    }
+    
+    n = recv(fd, buf->data, n, 0);
     if (n > 0) {
         buf->offset += n;
     }
+    
     return n;
 }
 
@@ -96,6 +129,16 @@ int buffer_write_fd(struct Buffer *buf, int fd)
         buffer_drain(buf, n);
     }
     return n;
+}
+
+int buffer_available(struct Buffer *buf)
+{
+    return buf->length - buffer_used(buf);
+}
+
+int buffer_used(struct Buffer *buf)
+{
+    return buf->data - buf->orig + buf->offset;
 }
 
 int buffer_has_data(struct Buffer *buf)

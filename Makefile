@@ -11,7 +11,7 @@ RANLIB=ranlib
 
 all: libevbuffsock
 
-libevbuffsock: libevbuffsock.a
+libevbuffsock: libevbuffsock.a test
 
 %.o: %.c
 	$(CC) -o $@ -c $< $(CFLAGS)
@@ -20,8 +20,11 @@ libevbuffsock.a: buffered_socket.o buffer.o
 	$(AR) $(AR_FLAGS) $@ $^
 	$(RANLIB) $@
 
+test: test.o libevbuffsock.a
+	$(CC) -o $@ $^ $(LIBS)
+
 clean:
-	rm -rf libbuffsock.a *.o
+	rm -rf libbuffsock.a test *.o
 
 .PHONY: install clean all
 
