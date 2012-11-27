@@ -16,6 +16,10 @@
 
 #define EVBUFFSOCK_VERSION "0.1.1"
 
+#define BUFFER_HAS_DATA(b)  ((b)->offset)
+#define BUFFER_USED(b)      ((b)->data - (b)->orig + (b)->offset)
+#define BUFFER_AVAILABLE(b) ((b)->length - BUFFER_USED(b))
+
 struct Buffer {
     char *data;
     char *orig;
@@ -31,10 +35,7 @@ int buffer_add(struct Buffer *buf, void *source, size_t length);
 void buffer_drain(struct Buffer *buf, size_t length);
 int buffer_read_fd(struct Buffer *buf, int fd);
 int buffer_write_fd(struct Buffer *buf, int fd);
-int buffer_has_data(struct Buffer *buf);
 int buffer_expand(struct Buffer *buf, size_t need);
-int buffer_used(struct Buffer *buf);
-int buffer_available(struct Buffer *buf);
 
 enum BufferedSocketStates {
     BS_INIT,
@@ -48,8 +49,6 @@ struct BufferedSocket {
     int port;
     int fd;
     int state;
-    struct ev_io conn_ev;
-    struct ev_timer timer_ev;
     struct ev_io read_ev;
     struct ev_io write_ev;
     struct Buffer *read_buf;

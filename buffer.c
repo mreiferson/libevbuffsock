@@ -58,7 +58,7 @@ int buffer_expand(struct Buffer *buf, size_t need)
     _DEBUG("%s: expanding by %lu\n", __FUNCTION__, expand);
     
     new_size = buf->length + expand;
-    if (new_size > buf->capacity) {
+    if (buf->capacity > 0 && new_size > buf->capacity) {
         return 0;
     }
     
@@ -108,7 +108,7 @@ int buffer_read_fd(struct Buffer *buf, int fd)
         n = 4096;
     }
     
-    need = n - buffer_available(buf);
+    need = n - BUFFER_AVAILABLE(buf);
     if (need > 0 && !buffer_expand(buf, need)) {
         return -1;
     }
@@ -129,19 +129,4 @@ int buffer_write_fd(struct Buffer *buf, int fd)
         buffer_drain(buf, n);
     }
     return n;
-}
-
-int buffer_available(struct Buffer *buf)
-{
-    return buf->length - buffer_used(buf);
-}
-
-int buffer_used(struct Buffer *buf)
-{
-    return buf->data - buf->orig + buf->offset;
-}
-
-int buffer_has_data(struct Buffer *buf)
-{
-    return buf->offset;
 }

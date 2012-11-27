@@ -15,4 +15,5 @@ int main(int argc, char **argv)
     buffer_add(buf, "!@#$%^", 6);
     
     assert(buf->length == 32);
+    assert(strncmp("567890ghjk1234567890!@#$%^", buf->data, buf->offset) == 0);
 }

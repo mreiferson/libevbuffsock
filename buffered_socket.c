@@ -8,8 +8,7 @@
 
 static void buffered_socket_read_cb(EV_P_ struct ev_io *w, int revents);
 static void buffered_socket_write_cb(EV_P_ struct ev_io *w, int revents);
-static void buffered_socket_connect_cb(EV_P_ struct ev_io *w, int revents);
-static void buffered_socket_connect_timeout_cb(EV_P_ struct ev_timer *w, int revents);
+static void buffered_socket_connect_cb(int revents, void *arg);
 static void buffered_socket_read_bytes_cb(EV_P_ struct ev_timer *w, int revents);
 
 struct BufferedSocket *new_buffered_socket(const char *address, int port,
@@ -113,41 +112,26 @@ int buffered_socket_connect(struct BufferedSocket *buffsock)
     
     freeaddrinfo(aitop);
     
-    // initialize and start the connection io watcher
-    buffsock->conn_ev.data = buffsock;
-    ev_init(&buffsock->conn_ev, buffered_socket_connect_cb);
-    ev_io_set(&buffsock->conn_ev, buffsock->fd, EV_WRITE);
-    
-    // initialize and start a connect timer (for timeouts)
-    ev_init(&buffsock->timer_ev, buffered_socket_connect_timeout_cb);
-    ev_timer_set(&buffsock->timer_ev, 2.0, 0.);
-    
-    ev_timer_start(buffsock->loop, &buffsock->timer_ev);
-    ev_io_start(buffsock->loop, &buffsock->conn_ev);
+    ev_once(buffsock->loop, buffsock->fd, EV_WRITE, 2.0, buffered_socket_connect_cb, buffsock);
     
     buffsock->state = BS_CONNECTING;
     
     return buffsock->fd;
 }
 
-static void buffered_socket_connect_timeout_cb(EV_P_ struct ev_timer *w, int revents)
+static void buffered_socket_connect_cb(int revents, void *arg)
 {
-    struct BufferedSocket *buffsock = (struct BufferedSocket *)(w->data);
-    _DEBUG("%s: connection timeout for \"%s:%d\" on %d\n",
-           __FUNCTION__, buffsock->address, buffsock->port, buffsock->fd);
-    
-    ev_io_stop(buffsock->loop, &buffsock->conn_ev);
-    buffered_socket_close(buffsock);
-}
-
-static void buffered_socket_connect_cb(EV_P_ struct ev_io *w, int revents)
-{
-    struct BufferedSocket *buffsock = (struct BufferedSocket *)(w->data);
+    struct BufferedSocket *buffsock = (struct BufferedSocket *)arg;
     int error;
     socklen_t errsz = sizeof(error);
     
-    ev_timer_stop(buffsock->loop, &buffsock->timer_ev);
-    ev_io_stop(buffsock->loop, &buffsock->conn_ev);
+    if (revents & EV_TIMEOUT) {
+        _DEBUG("%s: connection timeout for \"%s:%d\" on %d\n",
+            __FUNCTION__, buffsock->address, buffsock->port, buffsock->fd);
+        
+        buffered_socket_close(buffsock);
+        return;
+    }
     
     if (getsockopt(buffsock->fd, SOL_SOCKET, SO_ERROR, (void *)&error, &errsz) == -1) {
         _DEBUG("%s: getsockopt failed for \"%s:%d\" on %d\n",
@@ -190,11 +174,8 @@ void buffered_socket_close(struct BufferedSocket *buffsock)
 {
     _DEBUG("%s: closing \"%s:%d\" on %d\n",
            __FUNCTION__, buffsock->address, buffsock->port, buffsock->fd);
-           
-    buffsock->state = BS_DISCONNECTED;
     
-    ev_io_stop(buffsock->loop, &buffsock->conn_ev);
-    ev_timer_stop(buffsock->loop, &buffsock->timer_ev);
+    buffsock->state = BS_DISCONNECTED;
     
     if (buffsock->fd != -1) {
         if (buffsock->close_callback) {
@@ -226,7 +207,7 @@ size_t buffered_socket_write_buffer(struct BufferedSocket *buffsock, struct Buff
 {
     size_t n;
     
-    n = buffer_has_data(buf);
+    n = BUFFER_HAS_DATA(buf);
     if (n > 0) {
         buffered_socket_write(buffsock, buf->data, n);
         buffer_reset(buf);
@@ -260,7 +241,7 @@ void buffered_socket_read_bytes(struct BufferedSocket *buffsock, size_t n,
     buffsock->read_bytes_arg = arg;
     buffsock->read_bytes_n = n;
     
-    if (buffer_has_data(buffsock->read_buf) >= n) {
+    if (BUFFER_HAS_DATA(buffsock->read_buf) >= n) {
         ev_timer_start(buffsock->loop, &buffsock->read_bytes_timer_ev);
     }
 }
@@ -287,7 +268,7 @@ static void buffered_socket_read_cb(EV_P_ struct ev_io *w, int revents)
         (*buffsock->read_callback)(buffsock, buffsock->read_buf, buffsock->cbarg);
     }
     
-    if (buffsock->read_bytes_n && (buffer_has_data(buffsock->read_buf) >= buffsock->read_bytes_n)) {
+    if (buffsock->read_bytes_n && (BUFFER_HAS_DATA(buffsock->read_buf) >= buffsock->read_bytes_n)) {
         ev_timer_start(buffsock->loop, &buffsock->read_bytes_timer_ev);
     }
     
@@ -306,9 +287,9 @@ static void buffered_socket_write_cb(EV_P_ struct ev_io *w, int revents)
     int res;
     
     res = buffer_write_fd(buffsock->write_buf, w->fd);
-    _DEBUG("%s: %d written, left to write %d\n", __FUNCTION__, res, buffer_has_data(buffsock->write_buf));
+    _DEBUG("%s: %d written, left to write %lu\n", __FUNCTION__, res, BUFFER_HAS_DATA(buffsock->write_buf));
     
-    if (!buffer_has_data(buffsock->write_buf)) {
+    if (!BUFFER_HAS_DATA(buffsock->write_buf)) {
         ev_io_stop(buffsock->loop, &buffsock->write_ev);
     }
     
