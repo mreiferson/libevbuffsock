@@ -24,8 +24,8 @@ struct BufferedSocket *new_buffered_socket(const char *address, int port,
     buffsock = malloc(sizeof(struct BufferedSocket));
     buffsock->address = strdup(address);
     buffsock->port = port;
-    buffsock->read_buf = new_buffer(4096, 1024 * 1024 * 16);
-    buffsock->write_buf = new_buffer(4096, 1024 * 1024 * 16);
+    buffsock->read_buf = new_buffer(1024 * 16, 1024 * 16);
+    buffsock->write_buf = new_buffer(1024 * 16, 1024 * 16);
     buffsock->fd = -1;
     buffsock->state = BS_INIT;
     buffsock->connect_callback = connect_callback;
