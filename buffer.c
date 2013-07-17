@@ -112,7 +112,7 @@ int buffer_read_fd(struct Buffer *buf, int fd)
         return -1;
     }
     
-    n = recv(fd, buf->data, n, 0);
+    n = recv(fd, buf->data + buf->offset, n, 0);
     if (n > 0) {
         buf->offset += n;
     }
