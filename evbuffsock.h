@@ -66,7 +66,7 @@ struct BufferedSocket {
     void *cbarg;
 };
 
-struct BufferedSocket *new_buffered_socket(const char *address, int port,
+struct BufferedSocket *new_buffered_socket(struct ev_loop *loop, const char *address, int port,
         void (*connect_callback)(struct BufferedSocket *buffsock, void *arg),
         void (*close_callback)(struct BufferedSocket *buffsock, void *arg),
         void (*read_callback)(struct BufferedSocket *buffsock, struct Buffer *buf, void *arg),
@@ -74,7 +74,6 @@ struct BufferedSocket *new_buffered_socket(const char *address, int port,
         void (*error_callback)(struct BufferedSocket *buffsock, void *arg),
         void *cbarg);
 void free_buffered_socket(struct BufferedSocket *socket);
-void buffered_socket_set_loop(struct BufferedSocket *socket, struct ev_loop *loop);
 int buffered_socket_connect(struct BufferedSocket *buffsock);
 void buffered_socket_close(struct BufferedSocket *socket);
 size_t buffered_socket_write(struct BufferedSocket *buffsock, void *data, size_t len);

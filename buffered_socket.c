@@ -11,7 +11,7 @@ static void buffered_socket_write_cb(EV_P_ struct ev_io *w, int revents);
 static void buffered_socket_connect_cb(int revents, void *arg);
 static void buffered_socket_read_bytes_cb(EV_P_ struct ev_timer *w, int revents);
 
-struct BufferedSocket *new_buffered_socket(const char *address, int port,
+struct BufferedSocket *new_buffered_socket(struct ev_loop *loop, const char *address, int port,
         void (*connect_callback)(struct BufferedSocket *buffsock, void *arg),
         void (*close_callback)(struct BufferedSocket *buffsock, void *arg),
         void (*read_callback)(struct BufferedSocket *buffsock, struct Buffer *buf, void *arg),
@@ -37,7 +37,7 @@ struct BufferedSocket *new_buffered_socket(const char *address, int port,
     buffsock->read_bytes_n = 0;
     buffsock->read_bytes_callback = NULL;
     buffsock->read_bytes_arg = NULL;
-    buffsock->loop = ev_default_loop(0);
+    buffsock->loop = loop;
     
     ev_init(&buffsock->read_bytes_timer_ev, buffered_socket_read_bytes_cb);
     buffsock->read_bytes_timer_ev.data = buffsock;
@@ -55,11 +55,6 @@ void free_buffered_socket(struct BufferedSocket *buffsock)
         free(buffsock->address);
         free(buffsock);
     }
-}
-
-void buffered_socket_set_loop(struct BufferedSocket *buffsock, struct ev_loop *loop)
-{
-    buffsock->loop = loop;
 }
 
 int buffered_socket_connect(struct BufferedSocket *buffsock)
