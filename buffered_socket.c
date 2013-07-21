@@ -48,8 +48,8 @@ struct BufferedSocket *new_buffered_socket(struct ev_loop *loop, const char *add
 
 void free_buffered_socket(struct BufferedSocket *buffsock)
 {
+    _DEBUG("%s: free %p\n", __FUNCTION__, buffsock);
     if (buffsock) {
-        buffered_socket_close(buffsock);
         free_buffer(buffsock->read_buf);
         free_buffer(buffsock->write_buf);
         free(buffsock->address);
@@ -167,21 +167,26 @@ static void buffered_socket_connect_cb(int revents, void *arg)
 
 void buffered_socket_close(struct BufferedSocket *buffsock)
 {
+    if (buffsock->state == BS_DISCONNECTED) {
+        return;
+    }
+    
     _DEBUG("%s: closing \"%s:%d\" on %d\n",
            __FUNCTION__, buffsock->address, buffsock->port, buffsock->fd);
     
     buffsock->state = BS_DISCONNECTED;
     
     if (buffsock->fd != -1) {
-        if (buffsock->close_callback) {
-            (*buffsock->close_callback)(buffsock, buffsock->cbarg);
-        }
         close(buffsock->fd);
         buffsock->fd = -1;
     }
     
     ev_io_stop(buffsock->loop, &buffsock->read_ev);
     ev_io_stop(buffsock->loop, &buffsock->write_ev);
+    
+    if (buffsock->close_callback) {
+        (*buffsock->close_callback)(buffsock, buffsock->cbarg);
+    }
 }
 
 size_t buffered_socket_write(struct BufferedSocket *buffsock, void *data, size_t len)

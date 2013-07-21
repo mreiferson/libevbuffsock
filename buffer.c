@@ -11,8 +11,8 @@ struct Buffer *new_buffer(size_t length, size_t capacity)
     struct Buffer *buf;
     
     buf = malloc(sizeof(struct Buffer));
-    buf->data = malloc(length);
-    buf->orig = buf->data;
+    buf->orig = malloc(length);
+    buf->data = buf->orig;
     buf->offset = 0;
     buf->length = length;
     buf->capacity = capacity;
@@ -23,7 +23,7 @@ struct Buffer *new_buffer(size_t length, size_t capacity)
 void free_buffer(struct Buffer *buf)
 {
     if (buf) {
-        free(buf->data);
+        free(buf->orig);
         free(buf);
     }
 }
