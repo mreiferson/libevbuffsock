@@ -183,6 +183,7 @@ void buffered_socket_close(struct BufferedSocket *buffsock)
     
     ev_io_stop(buffsock->loop, &buffsock->read_ev);
     ev_io_stop(buffsock->loop, &buffsock->write_ev);
+    ev_timer_stop(buffsock->loop, &buffsock->read_bytes_timer_ev);
     
     if (buffsock->close_callback) {
         (*buffsock->close_callback)(buffsock, buffsock->cbarg);
