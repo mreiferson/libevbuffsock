@@ -75,33 +75,33 @@ int buffered_socket_connect(struct BufferedSocket *buffsock)
     snprintf(strport, sizeof(strport), "%d", buffsock->port);
     if (getaddrinfo(buffsock->address, strport, &ai, &aitop) != 0) {
         _DEBUG("%s: getaddrinfo() failed\n", __FUNCTION__);
-        return -1;
+        return 0;
     }
     sa = aitop->ai_addr;
     slen = aitop->ai_addrlen;
     
     if ((buffsock->fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         _DEBUG("%s: socket() failed\n", __FUNCTION__);
-        return -1;
+        return 0;
     }
     
     // set non-blocking
     if ((flags = fcntl(buffsock->fd, F_GETFL, NULL)) < 0) {
         close(buffsock->fd);
         _DEBUG("%s: fcntl(%d, F_GETFL) failed\n", __FUNCTION__, buffsock->fd);
-        return -1;
+        return 0;
     }
     if (fcntl(buffsock->fd, F_SETFL, flags | O_NONBLOCK) == -1) {
         close(buffsock->fd);
         _DEBUG("%s: fcntl(%d, F_SETFL) failed\n", __FUNCTION__, buffsock->fd);
-        return -1;
+        return 0;
     }
     
     if (connect(buffsock->fd, sa, slen) == -1) {
         if (errno != EINPROGRESS) {
             close(buffsock->fd);
             _DEBUG("%s: connect() failed\n", __FUNCTION__);
-            return -1;
+            return 0;
         }
     }
     
@@ -193,7 +193,7 @@ void buffered_socket_close(struct BufferedSocket *buffsock)
 size_t buffered_socket_write(struct BufferedSocket *buffsock, void *data, size_t len)
 {
     if (buffsock->state != BS_CONNECTED) {
-        return -1;
+        return 0;
     }
     
     _DEBUG("%s: writing %lu bytes starting at %p\n", __FUNCTION__, len, data);
