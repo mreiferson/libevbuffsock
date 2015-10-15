@@ -90,7 +90,7 @@ int buffer_add(struct Buffer *buf, void *source, size_t length)
 
 void buffer_drain(struct Buffer *buf, size_t length)
 {
-    if (length > buf->offset) {
+    if (length >= buf->offset) {
         buffer_reset(buf);
     } else {
         buf->data += length;
