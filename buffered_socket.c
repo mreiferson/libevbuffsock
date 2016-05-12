@@ -174,15 +174,16 @@ void buffered_socket_close(struct BufferedSocket *buffsock)
     _DEBUG("%s: closing \"%s:%d\" on %d\n",
            __FUNCTION__, buffsock->address, buffsock->port, buffsock->fd);
 
-    buffsock->state = BS_DISCONNECTED;
-
     if (buffsock->fd != -1) {
         close(buffsock->fd);
         buffsock->fd = -1;
     }
 
-    ev_io_stop(buffsock->loop, &buffsock->read_ev);
-    ev_io_stop(buffsock->loop, &buffsock->write_ev);
+    if (buffsock->state != BS_CONNECTING) {
+        ev_io_stop(buffsock->loop, &buffsock->read_ev);
+        ev_io_stop(buffsock->loop, &buffsock->write_ev);
+    }
+    buffsock->state = BS_DISCONNECTED;
     ev_timer_stop(buffsock->loop, &buffsock->read_bytes_timer_ev);
 
     if (buffsock->close_callback) {
