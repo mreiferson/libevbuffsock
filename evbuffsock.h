@@ -67,6 +67,7 @@ struct BufferedSocket {
 };
 
 struct BufferedSocket *new_buffered_socket(struct ev_loop *loop, const char *address, int port,
+        size_t read_buf_len, size_t read_buf_capacity, size_t write_buf_len, size_t write_buf_capacity,
         void (*connect_callback)(struct BufferedSocket *buffsock, void *arg),
         void (*close_callback)(struct BufferedSocket *buffsock, void *arg),
         void (*read_callback)(struct BufferedSocket *buffsock, struct Buffer *buf, void *arg),

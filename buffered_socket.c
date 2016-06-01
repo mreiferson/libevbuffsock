@@ -12,6 +12,7 @@ static void buffered_socket_connect_cb(int revents, void *arg);
 static void buffered_socket_read_bytes_cb(EV_P_ struct ev_timer *w, int revents);
 
 struct BufferedSocket *new_buffered_socket(struct ev_loop *loop, const char *address, int port,
+        size_t read_buf_len, size_t read_buf_capacity, size_t write_buf_len, size_t write_buf_capacity,
         void (*connect_callback)(struct BufferedSocket *buffsock, void *arg),
         void (*close_callback)(struct BufferedSocket *buffsock, void *arg),
         void (*read_callback)(struct BufferedSocket *buffsock, struct Buffer *buf, void *arg),
@@ -24,8 +25,8 @@ struct BufferedSocket *new_buffered_socket(struct ev_loop *loop, const char *add
     buffsock = malloc(sizeof(struct BufferedSocket));
     buffsock->address = strdup(address);
     buffsock->port = port;
-    buffsock->read_buf = new_buffer(1024 * 16, 1024 * 16);
-    buffsock->write_buf = new_buffer(1024 * 16, 1024 * 16);
+    buffsock->read_buf = new_buffer(read_buf_len, read_buf_capacity);
+    buffsock->write_buf = new_buffer(write_buf_len, write_buf_capacity);
     buffsock->fd = -1;
     buffsock->state = BS_INIT;
     buffsock->connect_callback = connect_callback;
