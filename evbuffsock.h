@@ -49,11 +49,11 @@ struct BufferedSocket {
     int port;
     int fd;
     int state;
-    struct ev_io read_ev;
-    struct ev_io write_ev;
+    struct ev_io *read_ev;
+    struct ev_io *write_ev;
     struct Buffer *read_buf;
     struct Buffer *write_buf;
-    struct ev_timer read_bytes_timer_ev;
+    struct ev_timer *read_bytes_timer_ev;
     size_t read_bytes_n;
     void (*read_bytes_callback)(struct BufferedSocket *buffsock, void *arg);
     void *read_bytes_arg;
