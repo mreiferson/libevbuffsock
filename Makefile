@@ -24,7 +24,7 @@ test: test.o libevbuffsock.a
 	$(CC) -o $@ $^ $(LIBS)
 
 clean:
-	rm -rf libbuffsock.a test *.o
+	rm -rf libevbuffsock.a test *.o
 
 .PHONY: install clean all
 
